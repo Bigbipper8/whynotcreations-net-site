@@ -3,19 +3,25 @@
     width: 100%;
     height: auto;
     display: block;
-    margin: 0 auto;
-    border : 1px solid white;
-    border-radius:  12px;
+    margin: 0 auto 30px auto;
+    border: 1px solid white;
+    border-radius: 12px;
     box-shadow: 0 0 10px cyan;
+}
+
+header p {
+    font-size: 24px;
+    margin: 0 0 20px 0;
+    color: lime;
+    text-shadow: 0 0 10px lime;
 }
 
 body {
     background-color: black;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    margin: 0;
+    font-family: sans-serif;
 }
+
 header {
     text-align: center;
     padding: 40px 0;
@@ -56,10 +62,13 @@ footer {
     opacity: 0.6;
     color: cyan;
     text-shadow: 0 0 10px cyan;
+    margin-top: 50px;
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    background-color:black;
+    padding: 40px 20px;
+    background-color: black;
+    text-align: center;
 }
