@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+
+<head>
+    <link rel="stylesheet" href="/CSS/orbital-pong-ds.css">
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+    <img class="Logo" src="/assets/orbital-pong-ds-port.png" alt="Orbital Pong Logo">
+</header>
+
+<nav>
+    <a href="/404" download>
+        <button class="btn">Download Orbital Pong (DS Port) Prototype</button>
+    </a>
+</nav>
+    
+<main>
+    <h1>Orbital Pong DS Port</h1>
+    <p>Revolutionizing Play, One Creation at a Time.</p>
+
+    <div class="description">
+        <p>
+            A version of Orbital Pong PC Port for the Nintendo DS with new backgrounds and new gameplay!
+        </p>
+    </div>
+</main>
+
+<footer>
+    <p>© 2025 Why Not Creations</p>
+</footer>
+
+</div>
+
+</body>
+
+</html>
