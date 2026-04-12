@@ -1,12 +1,10 @@
 .WNC {
-    max-width: 200px;
+    max-width: 600px;
     width: 100%;
     height: auto;
     display: block;
-    margin: 0 auto 30px auto;
-    border: 1px solid white;
-    border-radius: 12px;
-    box-shadow: 0 0 10px cyan;
+    margin: 0 auto;
+    border-radius:  12px;
 }
 
 header p {
