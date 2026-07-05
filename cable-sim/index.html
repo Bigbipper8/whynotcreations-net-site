@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Retro Cable TV Simulator</title>
+    <link rel="stylesheet" href="/static/css.css">
+</head>
+<body>
+
+    <div id="power-overlay">
+        <button id="power-btn">POWER ON TV</button>
+    </div>
+
+    <div class="tv-container">
+        <div id="osd">CH 01</div>
+        <canvas id="static-canvas"></canvas>
+        <video id="tv-screen"></video>
+        <audio id="static-audio" loop></audio>
+    </div>
+
+    <div class="controls">
+        <button id="prev-btn">Previous Channel</button>
+        <button id="next-btn">Next Channel</button>
+    </div>
+
+    <script>
+        const API_BASE =
+            window.API_BASE ||
+            (window.location.hostname === "localhost"
+                ? "http://localhost:5000"
+                : "api.whynotcreations.net");
+
+        let channels = [];
+        let currentChannelIndex = 0;
+        let serverUptimeAtLoad = 0;
+        let localLoadTime = 0;
+        
+        let staticInterval = null;
+        let osdTimeout = null;
+        let syncInterval = null; // New: Manages real-time scheduling loop
+        let activeBlockIndex = -1; // New: Tracks the current segment to prevent stuttering
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let staticAudioBuffer = null;
+        let activeAudioSource = null;
+
+        fetch(`${API_BASE}/cable/static/static.ogg`)
+            .then(response => {
+                if (!response.ok) throw new Error("Could not fetch static.ogg");
+                return response.arrayBuffer();
+            })
+            .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+            .then(decodedBuffer => {
+                staticAudioBuffer = decodedBuffer;
+            }).catch(err => console.error(err));
+
+        function playServerStaticAudio() {
+            if (!staticAudioBuffer) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            stopServerStaticAudio();
+            activeAudioSource = audioCtx.createBufferSource();
+            activeAudioSource.buffer = staticAudioBuffer;
+            activeAudioSource.loop = true;
+            activeAudioSource.connect(audioCtx.destination);
+            activeAudioSource.start(0);
+        }
+
+        function stopServerStaticAudio() {
+            if (activeAudioSource) {
+                try { activeAudioSource.stop(); } catch (e) {}
+                activeAudioSource = null;
+            }
+        }
+
+        const ARTIFICIAL_STATIC_DELAY = 600;
+
+        const tvScreen = document.getElementById("tv-screen");
+        const prevButton = document.getElementById("prev-btn");
+        const nextButton = document.getElementById("next-btn");
+        const powerOverlay = document.getElementById("power-overlay");
+        const powerButton = document.getElementById("power-btn");
+        const canvas = document.getElementById("static-canvas");
+        const ctx = canvas.getContext("2d");
+        const osd = document.getElementById("osd");
+
+        canvas.width = 320;
+        canvas.height = 240;
+
+        function startStaticNoise() {
+            canvas.style.display = "block";
+            if (staticInterval) clearInterval(staticInterval);
+            staticInterval = setInterval(() => {
+                const imgData = ctx.createImageData(canvas.width, canvas.height);
+                const data = imgData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    const noise = Math.floor(Math.random() * 255);
+                    data[i] = noise; data[i + 1] = noise; data[i + 2] = noise; data[i + 3] = 255;
+                }
+                ctx.putImageData(imgData, 0, 0);
+            }, 30);
+        }
+
+        function stopStaticNoise() {
+            canvas.style.display = "none";
+            if (staticInterval) { clearInterval(staticInterval); staticInterval = null; }
+        }
+
+        function triggerOSD(channelNum) {
+            osd.innerText = `CH ${String(channelNum).padStart(2, '0')}`;
+            osd.style.display = "block";
+            if (osdTimeout) clearTimeout(osdTimeout);
+            osdTimeout = setTimeout(() => { osd.style.display = "none"; }, 3000);
+        }
+
+        powerButton.addEventListener("click", function () {
+            powerOverlay.style.display = "none";
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            changeChannel(currentChannelIndex);
+        });
+
+        // Ensure videos recover gracefully if a browser pauses them automatically
+        tvScreen.addEventListener('pause', function () {
+            // Only try to play if we're not supposed to be showing a blank screen
+            if (channels.length > 0 && activeBlockIndex >= 0) {
+                const currentBlock = channels[currentChannelIndex].schedule[activeBlockIndex];
+                if (currentBlock && currentBlock.src_type !== "black_screen") {
+                    tvScreen.play().catch(err => console.log(err));
+                }
+            }
+        });
+
+        // The core real-time schedule evaluator
+        function evaluateSchedule(channelData) {
+            if (!channels[currentChannelIndex] || channels[currentChannelIndex].id !== channelData.id) return;
+
+            const timePassedSinceLoad = (Date.now() - localLoadTime) / 1000;
+            // Map our local viewing session to the server's master timeline
+            const currentUptime = serverUptimeAtLoad + timePassedSinceLoad;
+            
+            const offset = channelData.time_offset || 0.0;
+            const relativeTimeInLoop = (currentUptime + offset) % channelData.total_loop_duration;
+
+            let targetBlockIndex = 0;
+            for (let i = 0; i < channelData.schedule.length; i++) {
+                let block = channelData.schedule[i];
+                if (relativeTimeInLoop >= block.timeline_start && relativeTimeInLoop < block.timeline_end) {
+                    targetBlockIndex = i;
+                    break;
+                }
+            }
+
+            const targetBlock = channelData.schedule[targetBlockIndex];
+            const timeSpentInBlock = relativeTimeInLoop - targetBlock.timeline_start;
+            const absoluteSeekTarget = targetBlock.video_seek_start + timeSpentInBlock;
+
+            // Triggered only when passing a commercial break or segment boundary
+            if (targetBlockIndex !== activeBlockIndex) {
+                activeBlockIndex = targetBlockIndex;
+
+                if (targetBlock.src_type === "black_screen") {
+                    tvScreen.pause();
+                    tvScreen.src = "";
+                    tvScreen.style.backgroundColor = "black";
+                    return; 
+                }
+
+                let targetSrcUrl = targetBlock.src_type === "commercial" 
+                    ? `${API_BASE}/cable/commercials/${targetBlock.filename}`
+                    : targetBlock.src_type === "blank" 
+                        ? `${API_BASE}/cable/static/${targetBlock.filename}` 
+                        : `${API_BASE}/cable/video/${targetBlock.filename}`;
+
+                if (tvScreen.src !== targetSrcUrl) {
+                    tvScreen.pause();
+                    tvScreen.src = targetSrcUrl;
+                    tvScreen.style.backgroundColor = "black";
+                    
+                    tvScreen.addEventListener('loadedmetadata', function () {
+                        tvScreen.currentTime = absoluteSeekTarget;
+                        tvScreen.play().then(() => {
+                            stopStaticNoise();
+                            stopServerStaticAudio();
+                        }).catch(err => console.log("Playback deferred:", err));
+                    }, { once: true });
+                } else {
+                    // Same video file, simply scrub ahead to skip the commercial break logic
+                    tvScreen.currentTime = absoluteSeekTarget;
+                    tvScreen.play().then(() => {
+                        stopStaticNoise();
+                        stopServerStaticAudio();
+                    }).catch(err => console.log("Playback deferred:", err));
+                }
+            } else {
+                // Anti-Drift: Keeps browser playback perfectly synced to real-time math
+                if (targetBlock.src_type !== "black_screen" && !tvScreen.paused) {
+                    const drift = Math.abs(tvScreen.currentTime - absoluteSeekTarget);
+                    // If video stuttered and is off by more than 1.5s, snap it back onto schedule
+                    if (drift > 1.5) {
+                        tvScreen.currentTime = absoluteSeekTarget;
+                    }
+                }
+            }
+        }
+
+        async function changeChannel(index) {
+            currentChannelIndex = index;
+            
+            // Wipe the existing sync loop to prevent conflicting timers
+            if (syncInterval) {
+                clearInterval(syncInterval);
+                syncInterval = null;
+            }
+            activeBlockIndex = -1;
+
+            try {
+                const response = await fetch(`${API_BASE}/cable/channels`);
+                const data = await response.json();
+                if (data.success && data.channels.length > 0) {
+                    channels = data.channels;
+                    serverUptimeAtLoad = data.server_uptime;
+                    localLoadTime = Date.now();
+                }
+            } catch (error) { 
+                console.error("Live configuration sync failed:", error); 
+            }
+
+            if (channels.length === 0) return;
+            if (currentChannelIndex >= channels.length) currentChannelIndex = 0;
+
+            const channelData = channels[currentChannelIndex];
+
+            startStaticNoise();
+            playServerStaticAudio();
+            triggerOSD(currentChannelIndex + 1);
+
+            if (channelData.type === "static") {
+                tvScreen.pause();
+                tvScreen.src = "";
+                tvScreen.style.backgroundColor = "black";
+                return;
+            }
+
+            // Delay the start of the schedule sync loop to simulate the TV tuner locking in
+            setTimeout(() => {
+                evaluateSchedule(channelData); // Evaluate instantly
+                syncInterval = setInterval(() => evaluateSchedule(channelData), 500); // Re-evaluate every half-second
+            }, ARTIFICIAL_STATIC_DELAY);
+        }
+
+        nextButton.addEventListener("click", () => navigateChannel(1));
+        prevButton.addEventListener("click", () => navigateChannel(-1));
+
+        window.addEventListener("keydown", function (e) {
+            if (channels.length === 0) return;
+            if (e.key === "ArrowUp" || e.key === "ChannelUp" || e.key.toLowerCase() === "w") navigateChannel(1);
+            else if (e.key === "ArrowDown" || e.key === "ChannelDown" || e.key.toLowerCase() === "s") navigateChannel(-1);
+        });
+
+        function navigateChannel(direction) {
+            let newIndex = currentChannelIndex + direction;
+            if (newIndex >= channels.length) newIndex = 0;
+            if (newIndex < 0) newIndex = channels.length - 1;
+            changeChannel(newIndex);
+        }
+    </script>
+</body>
+</html>

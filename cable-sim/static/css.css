@@ -1,0 +1,119 @@
+/* Load the custom VCR OSD Font */
+@font-face {
+    font-family: 'VcrOsd';
+    src: url('/static/OSD.ttf') format('truetype');
+}
+
+body {
+    background-color: #111;
+    color: white;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* TV Frame Container */
+.tv-container {
+    position: relative;
+    background-color: black;
+    border: 4px solid #333;
+    box-sizing: border-box; /* Ensures border is counted in the dimensions */
+
+    /* DEFAULT STATE: Buttons are VISIBLE (e.g., Touch/Mobile)
+      Available height = 100vh minus the button height, margins, and body padding (~120px)
+    */
+    --max-h: calc(100vh - 120px); 
+    
+    /* The magic formula: 
+      Width should be 4/3 (133.33%) of the maximum height, but cannot exceed 100% of the screen width.
+      Height is then mathematically locked to 3/4 (75%) of that width to maintain a strict 4:3 ratio.
+    */
+    width: min(100vw - 20px, calc(var(--max-h) * 4 / 3));
+    height: calc(this.width * 3 / 4); /* We map it dynamically below using aspect-ratio */
+    aspect-ratio: 4 / 3;
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: fill; /* Forces 4:3 stretch behavior like a real tube TV */
+}
+
+/* Static Noise Overlay Canvas */
+#static-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none; /* Allows clicks to pass through if necessary */
+    display: none;        /* Hidden by default, toggled via JS */
+}
+
+/* On-Screen Display (OSD) Text */
+#osd {
+    position: absolute;
+    top: 30px;
+    left: 40px;
+    font-family: 'VcrOsd', monospace;
+    font-size: 4vw; /* Changed to responsive size so it scales with the bigger TV */
+    min-size: 24px;
+    max-size: 32px;
+    color: #00ff00; /* Classic bright green OSD text */
+    text-shadow: 2px 2px 0px #000;
+    z-index: 3;
+    display: none;
+}
+
+.controls {
+    margin-top: 20px;
+    height: 44px; /* Explicit height to make our calc() math pixel-perfect */
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    margin: 0 10px;
+}
+
+#power-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+#power-btn {
+    padding: 20px 40px;
+    font-size: 24px;
+    background-color: #ff3b30;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* --- AUTOMATIC BUTTON HIDING --- */
+@media (hover: hover) and (pointer: fine) {
+    .controls {
+        display: none;
+    }
+
+    /* DESKTOP STATE: Buttons are HIDDEN.
+      We can update the variable so the TV expands to use almost the entire height (100vh)!
+    */
+    .tv-container {
+        --max-h: calc(100vh - 40px); /* Leaves just a tiny padding at the top/bottom */
+    }
+}
