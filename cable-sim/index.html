@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Retro Cable TV Simulator</title>
-    <link rel="stylesheet" href="/static/css.css">
+    <link rel="stylesheet" href="static/css.css">
 </head>
 <body>
 
@@ -24,12 +24,8 @@
     </div>
 
     <script>
-        const API_BASE =
-            window.API_BASE ||
-            (window.location.hostname === "localhost"
-                ? "http://localhost:5000"
-                : "api.whynotcreations.net");
-
+        const API_BASE = "https://api.whynotcreations.net"
+	
         let channels = [];
         let currentChannelIndex = 0;
         let serverUptimeAtLoad = 0;
