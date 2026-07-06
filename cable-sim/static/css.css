@@ -1,7 +1,7 @@
 /* Load the custom VCR OSD Font */
 @font-face {
     font-family: 'VcrOsd';
-    src: url('/static/OSD.ttf') format('truetype');
+    src: url('static/OSD.ttf') format('truetype');
 }
 
 body {
