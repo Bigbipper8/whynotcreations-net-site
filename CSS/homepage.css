@@ -44,7 +44,7 @@ nav a {
 }
 
 nav a:hover {
-    color: purple;
+    color: cyan;
     text-shadow: 0 0 10px purple;
 }
 
