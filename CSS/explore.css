@@ -1,0 +1,73 @@
+.WNC {
+    max-width: 600px;
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    border-radius:  12px;
+}
+
+html {
+    min-height: 100%;
+    background: #000;
+}
+
+body {
+    background-image: url("/assets/explore-background.webp");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    margin: 0;
+    font-family: sans-serif;
+}
+
+header {
+    text-align: center;
+    padding: 40px 0;
+}
+
+nav {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    padding: 20px;
+    border: 1px solid white;
+    border-radius: 12px;
+}
+
+nav a {
+    color: #ff00ff;;
+    text-decoration: none;
+    font-size: 18px;
+    text-shadow: 0 0 10px #ff00ff;;
+}
+
+nav a:hover {
+    color: cyan;
+    text-shadow: 0 0 10px #ff00ff;;
+}
+
+main {
+    text-align: center;
+    padding: 50px;
+    color: #ff00ff;;
+    text-shadow: 0 0 10px #ff00ff;
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    opacity: 0.6;
+    color: #ff00ff;;
+    text-shadow: 0 0 10px #ff00ff;;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    background-color: black;
+    text-align: center;
+    background: transparent;
+}
