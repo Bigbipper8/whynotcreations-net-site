@@ -37,10 +37,20 @@ nav {
 }
 
 nav a {
-    color: #ff00ff;;
+    display: inline-block;
+    margin: 10px;
+    text-align: center;
+    padding: 10px 20px;
+    background-color: #000000;
+    color: #ff00ff;
     text-decoration: none;
     font-size: 18px;
-    text-shadow: 0 0 10px #ff00ff;;
+    text-shadow: 0 0 10px #ff00ff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px #ff00ff;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
 }
 
 nav a:hover {
