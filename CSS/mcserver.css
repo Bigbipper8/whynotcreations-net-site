@@ -7,6 +7,11 @@
     border-radius:  12px;
 }
 
+html {
+    min-height: 100%;
+    background: #000;
+}
+
 header p {
     font-size: 24px;
     margin: 0 0 20px 0;
