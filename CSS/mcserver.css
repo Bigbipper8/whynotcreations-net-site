@@ -15,7 +15,7 @@ header p {
 }
 
 body {
-    background-image: url("./Minecraft-background.webp");
+    background-image: url("/assets/Minecraft-background.webp");
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
