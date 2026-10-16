@@ -15,7 +15,11 @@ header p {
 }
 
 body {
-    background-color: black;
+    background-image: url("./Minecraft-background.webp");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     margin: 0;
     font-family: sans-serif;
 }
