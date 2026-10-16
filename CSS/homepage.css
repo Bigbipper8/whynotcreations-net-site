@@ -71,7 +71,7 @@ main {
     text-align: center;
     padding: 50px;
     color: #ff00ff;;
-    text-shadow: 0 0 10px cyan;
+    text-shadow: 0 0 10px #ff00ff;
 }
 
 footer {
